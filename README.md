@@ -16,12 +16,6 @@ or the newest version.[^1]
 
 If you have a crazy knockout (fun variations on the game imclude potentially rolling negative numbers, fractions or decimals, working numbers 1-72, or rolling four numbers instead of three), no worries! The script is happy to work with it.
 
-**ALTHOUGH:** at the moment, the script only supports 3 numbers. It's due to the way permutations of parentheses work. With three numbers, there's two possible combinations of parentheses:
-* (a b) c
-* a (b c)
-
-Adding more would require more complicated math than I can do at the moment. So cheers, enjoy, and work those extra numbers yourself ;)
-
 Good luck and happy numbering. And don't forget to yell "BLACKOUT!" when you finish all 36! (Or 72.)
 
 ---

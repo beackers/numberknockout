@@ -27,23 +27,15 @@ for _, n in ipairs(perms.permutations(numbers, #numbers)) do
   for _, o in ipairs(perms.permuteOps(opsSymbols, #numbers - 1)) do
 
     -- find parentheses orders and calculate
-    local l = calc.left(n, o)
-    local r = calc.right(n, o)
-    if l ~= nil and l ~= math.huge and l~= -math.huge then
-      table.insert(results, {
-        value = l,
-        numbers = n,
-        operators = o,
-        grouping = "left"
-      })
-    end
-    if r ~= nil and r ~= math.huge and r ~= -math.huge then
-      table.insert(results, {
-        value = r,
-        numbers = n,
-        operators = o,
-        grouping = "right"
-      })
+    local r = calc.calc(n, o)
+    for _, val in ipairs(r) do
+      if val ~= nil and val ~= math.huge and val ~= -math.huge and math.abs(math.floor(val)) == val then
+        table.insert(results, {
+          value = val,
+          numbers = n,
+          order = o
+        })
+      end
     end
   end
 end
@@ -68,10 +60,9 @@ results = unique
 -- printing
 for _, r in ipairs(results) do
   print(
-    r.grouping,
     table.concat(r.numbers, ", "),
-    table.concat(r.operators, ", "),
+    table.concat(r.order, ", "),
     "=",
-    string.format("%8.6f", r.value)
+    string.format("%8d", r.value)
   )
 end
