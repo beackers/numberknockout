@@ -7,6 +7,7 @@ local stats = {
   leaves = 0
 }
 stats.depth = {}
+stats.uniqueStates = {}
 
 
 -- get numbers
@@ -16,7 +17,7 @@ for i = 1, #arg do
   table.insert(numbers, tonumber(arg[i]))
 end
 
--- unique state?
+-- unique state
 local function stateKey(numbers)
   local tmp = {}
   for i = 1, #numbers do
@@ -28,8 +29,6 @@ end
 
 
 -- calculations
-local results = {}
-
 local function search(numbers, depth)
   -- recursion tracking
   depth = depth or 1
@@ -40,18 +39,19 @@ local function search(numbers, depth)
   -- base case n=1
   local n = #numbers
   if n == 1 then
-    table.insert(results, numbers[1])
     stats.leaves = stats.leaves + 1
-    return
+    return { numbers[1] }
   end
 
-  -- have we already seen this?
+  -- have we already calculated this?
   local key = stateKey(numbers)
   if stats.uniqueStates[key] then
     stats.pruned = stats.pruned + 1
-    return
+    return stats.uniqueStates[key]
   end
-  stats.uniqueStates[key] = true
+
+  -- start results out here
+  local results = {}
 
   -- for indices i < j
   for i = 1, n - 1 do
@@ -70,15 +70,26 @@ local function search(numbers, depth)
           end
           next[#next+1] = r
 
-          -- keep going with new function
-          search(next, depth + 1)
+          -- keep going with new numbers
+          local subresults = search(next, depth + 1)
+
+          -- compile results list
+          for _, r in ipairs(subresults) do
+            results[#results+1] = r
+          end
         end
       end
     end
   end
+
+  -- map state -> results
+  -- if we see state X and get results A, B, C,
+  -- if we see state X again, we know what we get
+  stats.uniqueStates[key] = results
+  return results
 end
 
-search(numbers)
+local results = search(numbers)
 
 -- sorting
 table.sort(results, function(a, b)
