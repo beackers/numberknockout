@@ -1,0 +1,21 @@
+name: Test Under Load
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Run with 3 ints
+        run: lua knockout.lua 1 2 3
+        continue-on-error: true
+
+      - name: Run with 4 ints
+        run: lua knockout.lua 1 2 3 4
+        continue-on-error: true

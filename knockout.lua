@@ -1,5 +1,13 @@
-local perms = require("permutations")
 local calc = require("calculations")
+
+-- statistics (for nerds)
+local stats = {
+  calls = 0,
+  pruned = 0,
+  leaves = 0
+}
+stats.depth = {}
+
 
 -- get numbers
 local numbers = {}
@@ -8,41 +16,73 @@ for i = 1, #arg do
   table.insert(numbers, tonumber(arg[i]))
 end
 
--- operators
-local opsSymbols = { "+", "-", "/", "*", "%"}
-
-
--- calculate given numbers and operators
-function calculate(nums, operators)
-  return
+-- unique state?
+local function stateKey(numbers)
+  local tmp = {}
+  for i = 1, #numbers do
+    tmp[#tmp+1] = numbers[i]
+  end
+  table.sort(tmp)
+  return table.concat(tmp, ",")
 end
 
 
 -- calculations
 local results = {}
 
--- for each permutation of numbers
-for _, n in ipairs(perms.permutations(numbers, #numbers)) do
-  -- for each permutation of operators
-  for _, o in ipairs(perms.permuteOps(opsSymbols, #numbers - 1)) do
+local function search(numbers, depth)
+  -- recursion tracking
+  depth = depth or 1
+  stats.depth[depth] = (stats.depth[depth] or 0) + 1
+  stats.calls = stats.calls + 1
+  stats.uniqueStates = stats.uniqueStates or {}
 
-    -- find parentheses orders and calculate
-    local r = calc.calc(n, o)
-    for _, val in ipairs(r) do
-      if val ~= nil and val ~= math.huge and val ~= -math.huge and math.abs(math.floor(val)) == val then
-        table.insert(results, {
-          value = val,
-          numbers = n,
-          order = o
-        })
+  -- base case n=1
+  local n = #numbers
+  if n == 1 then
+    table.insert(results, numbers[1])
+    stats.leaves = stats.leaves + 1
+    return
+  end
+
+  -- have we already seen this?
+  local key = stateKey(numbers)
+  if stats.uniqueStates[key] then
+    stats.pruned = stats.pruned + 1
+    return
+  end
+  stats.uniqueStates[key] = true
+
+  -- for indices i < j
+  for i = 1, n - 1 do
+    for j = i + 1, n do
+      local a, b = numbers[i], numbers[j]
+
+      -- calculate everything possible
+      for _, r in ipairs(calc.raws(a, b)) do
+        if r and math.abs(math.floor(r)) == r and r ~= math.huge and r ~= -math.huge then
+          -- copy numbers but replace i and j with r
+          local next = {}
+          for k = 1, n do
+            if k ~= i and k ~= j then
+              next[#next+1] = numbers[k]
+            end
+          end
+          next[#next+1] = r
+
+          -- keep going with new function
+          search(next, depth + 1)
+        end
       end
     end
   end
 end
 
+search(numbers)
+
 -- sorting
 table.sort(results, function(a, b)
-  return a.value < b.value
+  return a < b
 end)
 
 -- uniquing
@@ -50,9 +90,9 @@ local EPS = 1e-9
 local unique = {}
 local last = nil
 for _, r in ipairs(results) do
-  if not last or math.abs(r.value - last) > EPS then
+  if not last or math.abs(r - last) > EPS then
     table.insert(unique, r)
-    last = r.value
+    last = r
   end
 end
 results = unique
@@ -60,9 +100,16 @@ results = unique
 -- printing
 for _, r in ipairs(results) do
   print(
-    table.concat(r.numbers, ", "),
-    table.concat(r.order, ", "),
-    "=",
-    string.format("%8d", r.value)
+    r
   )
 end
+print("~~~~~ stats for nerds ~~~~~~~")
+print("calls:", stats.calls)
+print("pruned:", stats.pruned)
+print("leaves:", stats.leaves)
+for d = 1, #stats.depth do
+  print("depth ", d, stats.depth[d] or 0)
+end
+local count = 0
+for _ in pairs(stats.uniqueStates) do count = count + 1 end
+print("unique states:", count)
