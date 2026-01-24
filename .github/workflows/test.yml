@@ -1,12 +1,13 @@
 name: Test Under Load
+
 on:
   push:
   pull_request:
   workflow_dispatch:
+
 jobs:
   easy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -24,7 +25,7 @@ jobs:
 
       - name: Run 4
         run: lua knockout.lua 1 2 3 4
-        timeout=minutes: 1
+        timeout-minutes: 1
 
       - name: Run 5
         run: lua knockout.lua 1 2 3 4 5
@@ -40,7 +41,6 @@ jobs:
 
   hard:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
