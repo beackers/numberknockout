@@ -1,11 +1,10 @@
 name: Test Under Load
 on:
   push:
-    branches: ["main"]
   pull_request:
   workflow_dispatch:
 jobs:
-  test:
+  easy:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,21 +14,44 @@ jobs:
       - name: Install lua
         uses: leafo/gh-actions-lua@v12
 
-      - name: Run with 3 ints
+      - name: Run 2
+        run: lua knockout.lua 1 2
+        timeout-minutes: 1
+
+      - name: Run 3
         run: lua knockout.lua 1 2 3
+        timeout-minutes: 1
 
-      - name: Run with 4 ints
+      - name: Run 4
         run: lua knockout.lua 1 2 3 4
+        timeout=minutes: 1
 
-      - name: Run with 5 ints
+      - name: Run 5
         run: lua knockout.lua 1 2 3 4 5
+        timeout-minutes: 1
 
-      - name: Run with 6 ints
+      - name: Run 6
         run: lua knockout.lua 1 2 3 4 5 6
+        timeout-minutes: 1
 
-      - name: Run with 7 ints
+      - name: Run 7
         run: lua knockout.lua 1 2 3 4 5 6 7
+        timeout-minutes: 1
 
-      - name: Run absolutely crazy 10 ints
-        run: lua knockout.lua 1 2 3 4 5 6 7 8 9 10
-        continue-on-error: true
+  hard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Install lua
+        uses: leafo/gh-actions-lua@v12
+
+      - name: Run 8
+        run: lua knockout.lua 1 2 3 4 5 6 7 8
+        timeout-minutes: 2
+
+      - name: Run 9
+        run: lua knockout.lua 1 2 3 4 5 6 7 8 9
+        timeout-minutes: 5

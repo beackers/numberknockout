@@ -14,7 +14,12 @@ or the newest version.[^1]
 3. Run `knockout.lua` with the three numbers you rolled as the arguments, e.g.  
 `lua knockout.lua 1 2 3`
 
-If you have a crazy knockout (fun variations on the game imclude potentially rolling negative numbers, fractions or decimals, working numbers 1-72, or rolling four numbers instead of three), no worries! The script is happy to work with it.
+## limitations
+
+If you have a crazy knockout (fun variations include more than three numbers, trying to reach 1-72, or using negatives), double check that this is going to meet requirements before you use it:
+* Script only returns positive, integer numbers.
+* Division only "works" when the result is a whole number.
+* Using 7+ numbers for the input may crash your computer. For the latest info on how long it takes GitHub supercomputers to run it, check the `test` job in the Actions tab.
 
 Good luck and happy numbering. And don't forget to yell "BLACKOUT!" when you finish all 36! (Or 72.)
 

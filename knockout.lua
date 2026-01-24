@@ -17,11 +17,16 @@ for i = 1, #arg do
   table.insert(numbers, tonumber(arg[i]))
 end
 
+-- normalize keys
+local function normalize(number)
+  return tostring(math.tointeger(number))
+end
+
 -- unique state
 local function stateKey(numbers)
   local tmp = {}
   for i = 1, #numbers do
-    tmp[#tmp+1] = numbers[i]
+    tmp[#tmp+1] = normalize(numbers[i])
   end
   table.sort(tmp)
   return table.concat(tmp, ",")
@@ -29,29 +34,29 @@ end
 
 
 -- calculations
+local results = {}
 local function search(numbers, depth)
-  -- recursion tracking
-  depth = depth or 1
-  stats.depth[depth] = (stats.depth[depth] or 0) + 1
-  stats.calls = stats.calls + 1
-  stats.uniqueStates = stats.uniqueStates or {}
-
   -- base case n=1
   local n = #numbers
   if n == 1 then
     stats.leaves = stats.leaves + 1
-    return { numbers[1] }
+    results[numbers[1]] = true
+    return
   end
 
   -- have we already calculated this?
   local key = stateKey(numbers)
   if stats.uniqueStates[key] then
     stats.pruned = stats.pruned + 1
-    return stats.uniqueStates[key]
+    return
   end
+  stats.uniqueStates[key] = true
 
-  -- start results out here
-  local results = {}
+  -- recursion tracking
+  depth = depth or 1
+  stats.depth[depth] = (stats.depth[depth] or 0) + 1
+  stats.calls = stats.calls + 1
+  stats.uniqueStates = stats.uniqueStates or {}
 
   -- for indices i < j
   for i = 1, n - 1 do
@@ -69,54 +74,35 @@ local function search(numbers, depth)
             end
           end
           next[#next+1] = r
-
-          -- keep going with new numbers
-          local subresults = search(next, depth + 1)
-
-          -- compile results list
-          for _, r in ipairs(subresults) do
-            results[#results+1] = r
-          end
+          search(next, depth+1)
         end
       end
     end
   end
-
-  -- map state -> results
-  -- if we see state X and get results A, B, C,
-  -- if we see state X again, we know what we get
-  stats.uniqueStates[key] = results
-  return results
 end
 
-local results = search(numbers)
+search(numbers)
 
 -- sorting
-table.sort(results, function(a, b)
-  return a < b
-end)
+local out = {}
+for r in pairs(results) do
+  out[#out+1] = r
+end
+table.sort(out)
 
 -- uniquing
-local EPS = 1e-9
-local unique = {}
-local last = nil
-for _, r in ipairs(results) do
-  if not last or math.abs(r - last) > EPS then
-    table.insert(unique, r)
-    last = r
-  end
-end
-results = unique
+-- skipping because we set, not list, so everything's already unique
 
 -- printing
-for _, r in ipairs(results) do
+for _, r in ipairs(out) do
   print(
     r
   )
 end
+
+
 print("~~~~~ stats for nerds ~~~~~~~")
 print("calls:", stats.calls)
-print("pruned:", stats.pruned)
 print("leaves:", stats.leaves)
 for d = 1, #stats.depth do
   print("depth ", d, stats.depth[d] or 0)
