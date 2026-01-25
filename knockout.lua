@@ -4,7 +4,7 @@ local calc = require("calculations")
 local stats = {
   calls = 0,
   rawcalls = 0,
-  pruned = 0,
+  pruned = {},
   leaves = 0
 }
 stats.depth = {}
@@ -23,28 +23,41 @@ for i = 1, #arg do
 end
 
 local allowedExps = {0, 0.5, 1, 2}
--- normalize keys
-local function normalize(n)
-  local best = n
+local function expandExponents(n)
+  local out = {}
 
   for _, e in ipairs(allowedExps) do
-    if e ~= n.exp then
-      local candidate = {
-        value = n.value,
-        exp = e,
-        history = string.format("(%s)^%s", n.history, e)
-      }
+    local candidate = {
+      value = n.value,
+      exp = e,
+      history = (e == 1)
+        and n.history
+        or string.format("(%s)^%s", n.history, e)
+    }
 
-      local v = calc.eval(candidate)
-      if v == v and v ~= math.huge and v ~= -math.huge then
-        if not best.history or #candidate.history < #best.history then
-          best = candidate
-        end
-      end
+    local v = calc.eval(candidate)
+    if v == v and v ~= math.huge and v ~= -math.huge then
+      out[#out+1] = candidate
     end
   end
-  return best
+
+  return out
 end
+
+local function normalize(n)
+  -- collapse identities only
+  if n.exp == 0 then
+    return { value = 1, exp = 1, history = "1" }
+  end
+  if n.value == 1 then
+    return { value = 1, exp = 1, history = "1" }
+  end
+  if n.exp == 1 then
+    return n
+  end
+  return n
+end
+
 
 local function normalizeState(set)
   local out = {}
@@ -82,12 +95,11 @@ local function stateKey(numbers)
   return table.concat(parts, ",")
 end
 
+
 -- calculations
 local results = {}
 local function search(numbers, depth)
   stats.rawcalls = stats.rawcalls + 1
-
-  numbers = normalizeState(numbers)  -- 🔑 normalize FIRST
 
   local n = #numbers
   if n == 1 then
@@ -95,13 +107,14 @@ local function search(numbers, depth)
     if not results[v]
        or #numbers[1].history < #results[v].history then
       results[v] = numbers[1]
+      stats.leaves = stats.leaves+1
     end
     return
   end
 
   local key = stateKey(numbers)
   if stats.uniqueStates[key] then
-    stats.pruned = stats.pruned + 1
+    stats.pruned[depth or 1] = (stats.pruned[depth or 1] or 0) + 1
     return
   end
   stats.uniqueStates[key] = true
@@ -115,19 +128,22 @@ local function search(numbers, depth)
     for j = i + 1, n do
       local a, b = numbers[i], numbers[j]
 
-      for _, r in ipairs(calc.raws(a, b)) do
-        if r.value and r.value == math.abs(math.floor(r.value))
-           and r.value ~= math.huge and r.value ~= -math.huge then
+      for _, a2 in ipairs(expandExponents(a)) do
+        for _, b2 in ipairs(expandExponents(b)) do
+          for _, r in ipairs(calc.raws(a2, b2)) do
+            local r2 = normalize(r)
 
-          local next = {}
-          for k = 1, n do
-            if k ~= i and k ~= j then
-              next[#next+1] = numbers[k]
+            if r2.value and r2.value == math.abs(math.floor(r2.value)) then
+              local next = {}
+              for k = 1, n do
+                if k ~= i and k ~= j then
+                  next[#next+1] = numbers[k]
+                end
+              end
+              next[#next+1] = r2
+              search(next, depth + 1)
             end
           end
-          next[#next+1] = r
-
-          search(next, depth + 1)
         end
       end
     end
@@ -160,8 +176,9 @@ print("~~~~~ stats for nerds ~~~~~~~")
 print("calls:", stats.calls)
 print("raw calls to search():", stats.rawcalls)
 print("leaves:", stats.leaves)
+print("results:", #out)
 for d = 1, #stats.depth do
-  print("depth ", d, stats.depth[d] or 0)
+  print("depth ", d, stats.depth[d] or 0, "pruned ", stats.pruned[d] or 0)
 end
 local count = 0
 for _ in pairs(stats.uniqueStates) do count = count + 1 end
