@@ -10,9 +10,6 @@ if not (#arg > 2) then
   os.exit()
 end
 for i = 3, #arg do
-  table.insert(numbers, {
-    value = tonumber(arg[i]),
-    history = tostring(arg[i])
-  })
+  numbers[i] = arg[i]
 end
-
+local initialState = states.newState(numbers)
