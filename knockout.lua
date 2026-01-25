@@ -18,13 +18,41 @@ for i = 1, #arg do
   table.insert(numbers, {
     value = tonumber(arg[i]),
     exp = 1,
-    history = {}
+    history = tostring(arg[i])
   })
 end
 
+local allowedExps = {0, 0.5, 1, 2}
 -- normalize keys
-local function normalize(number)
-  return tostring(math.tointeger(number))
+local function normalize(n)
+  local best = n
+
+  for _, e in ipairs(allowedExps) do
+    if e ~= n.exp then
+      local candidate = {
+        value = n.value,
+        exp = e,
+        history = string.format("(%s)^%s", n.history, e)
+      }
+
+      local v = calc.eval(candidate)
+      if v == v and v ~= math.huge and v ~= -math.huge then
+        if not best.history or #candidate.history < #best.history then
+          best = candidate
+        end
+      end
+    end
+  end
+  return best
+end
+
+local function normalizeState(set)
+  local out = {}
+
+  for i = 1, #set do
+    out[i] = normalize(set[i])
+  end
+  return out
 end
 
 -- unique state id
@@ -54,21 +82,23 @@ local function stateKey(numbers)
   return table.concat(parts, ",")
 end
 
-
 -- calculations
 local results = {}
-local allowedExps = {0, 0.5, 1, 2}
 local function search(numbers, depth)
   stats.rawcalls = stats.rawcalls + 1
-  -- base case n=1
+
+  numbers = normalizeState(numbers)  -- 🔑 normalize FIRST
+
   local n = #numbers
   if n == 1 then
-    stats.leaves = stats.leaves + 1
-    results[calc.eval(numbers[1])] = true
+    local v = calc.eval(numbers[1])
+    if not results[v]
+       or #numbers[1].history < #results[v].history then
+      results[v] = numbers[1]
+    end
     return
   end
 
-  -- have we already calculated this?
   local key = stateKey(numbers)
   if stats.uniqueStates[key] then
     stats.pruned = stats.pruned + 1
@@ -76,68 +106,55 @@ local function search(numbers, depth)
   end
   stats.uniqueStates[key] = true
 
-  -- recursion tracking
   depth = depth or 1
   stats.depth[depth] = (stats.depth[depth] or 0) + 1
   stats.calls = stats.calls + 1
-  stats.uniqueStates = stats.uniqueStates or {}
 
-  -- for indices i < j
+  -- BINARY OPERATIONS ONLY
   for i = 1, n - 1 do
     for j = i + 1, n do
       local a, b = numbers[i], numbers[j]
 
-      -- calculate with all operations
       for _, r in ipairs(calc.raws(a, b)) do
-        -- if we like r, then
-        if r and math.abs(math.floor(r)) == r and r ~= math.huge and r ~= -math.huge then
-          -- copy numbers without i or j
+        if r.value and r.value == math.abs(math.floor(r.value))
+           and r.value ~= math.huge and r.value ~= -math.huge then
+
           local next = {}
           for k = 1, n do
             if k ~= i and k ~= j then
               next[#next+1] = numbers[k]
             end
           end
+          next[#next+1] = r
 
-          -- add r
-          next[#next+1] = {
-            value = r,
-            exp = 1,
-            history = {}
-          }
-
-          -- go to the next level in the search
-          search(next, depth+1)
-        end -- we like r if
-      end -- for each value of r
-    end -- j index end
-  end -- i index end
-end -- fn end
+          search(next, depth + 1)
+        end
+      end
+    end
+  end
+end
 
 search(numbers)
 
 -- sorting
 local out = {}
-for r in pairs(results) do
+for _, r in pairs(results) do
   out[#out+1] = r
 end
 table.sort(out, function(a, b)
-  return a < b
+  return a.value < b.value
 end
 )
 
 -- uniquing
 -- skipping because we set, not list, so everything's already unique
 
--- printing (under 100)
+-- printing (under 100, history included)
 if #out < 100 then
   for _, r in ipairs(out) do
-    print(
-      r
-    )
+    print(tostring(math.tointeger(calc.eval(r))), r.history)
   end
 end
-
 
 print("~~~~~ stats for nerds ~~~~~~~")
 print("calls:", stats.calls)
