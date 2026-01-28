@@ -5,7 +5,7 @@ local heap = {
 function heap.push(state)
   heap.data[#heap.data + 1] = state
   table.sort(heap.data, function(a, b)
-    return a.score < b.score
+    return (a.score + a.depth) < (b.score + b.depth)
   end)
 end
 

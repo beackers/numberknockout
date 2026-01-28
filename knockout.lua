@@ -12,7 +12,7 @@ for i = 3, #arg do
   numbers[#numbers + 1] = math.tointeger(arg[i])
 end
 
-states.setMid((TARGET_MAX - TARGET_MIN) / 2)
+states.setMid((TARGET_MAX + TARGET_MIN) / 2)
 
 -- initialize min heap
 local heap = require("min")
@@ -31,7 +31,7 @@ while not heap.isEmpty() do
 
   -- leaf case
   if #state.raw == 1 then
-    results[state.key] = true
+    results[state.raw[1]] = true
     goto continue
   end
 
@@ -42,7 +42,9 @@ while not heap.isEmpty() do
   seen[state.key] = true
 
   for _, newState in ipairs(states.searchNextDepth(state)) do
-    heap.push(newState)
+    if states.canReach(newState, TARGET_MIN, TARGET_MAX) then
+      heap.push(newState)
+    end
   end
 
   ::continue::

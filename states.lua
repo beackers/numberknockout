@@ -52,7 +52,8 @@ function M.newState(nums, parent)
     raw = nums,
     key = M.key(nums),
     score = M.scoreState(nums),
-    rscore = parent.score - M.scoreState(nums)
+    rscore = parent.score - M.scoreState(nums),
+    depth = parent.depth and parent.depth + 1 or 0
   }
 end
 
@@ -84,6 +85,14 @@ function M.searchNextDepth(state)
   end
 
   return results
+end
+
+function M.canReach(state, min, max)
+  local sum = 0
+  for _, v in ipairs(state.raw) do
+    sum = sum + math.abs(v)
+  end
+  return sum >= min and sum <= max
 end
 
 return M
