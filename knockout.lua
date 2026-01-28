@@ -1,15 +1,61 @@
 local states = require("states")
 
 -- get numbers
-local TARGET_MIN = math.tointeger(arg[1])
-local TARGET_MAX = math.tointeger(arg[2])
-local numbers = {}
-
 if not (#arg > 2) then
   print("Not enough arguments: knockout needs at least 3 numbers. \nFirst number is bound minimum.\nSecond is bound max.\nAll numbers afterwards are the numbers to use.")
   os.exit()
 end
+local TARGET_MIN = math.tointeger(arg[1])
+local TARGET_MAX = math.tointeger(arg[2])
+local numbers = {}
 for i = 3, #arg do
-  numbers[i] = arg[i]
+  numbers[#numbers + 1] = math.tointeger(arg[i])
 end
-local initialState = states.newState(numbers)
+
+states.setMid((TARGET_MAX - TARGET_MIN) / 2)
+
+-- initialize min heap
+local heap = require("min")
+
+-- state one
+local initial = states.newState(numbers, nil)
+heap.push(initial)
+
+results = {}
+seen = {}
+
+local state = nil
+
+while not heap.isEmpty() do
+  state = heap.pop()
+
+  -- leaf case
+  if #state.raw == 1 then
+    results[state.key] = true
+    goto continue
+  end
+
+  -- have we handled this?
+  if seen[state.key] then
+    goto continue
+  end
+  seen[state.key] = true
+
+  for _, newState in ipairs(states.searchNextDepth(state)) do
+    heap.push(newState)
+  end
+
+  ::continue::
+end
+
+-- sorting
+local out = {}
+for k in pairs(results) do
+  out[#out + 1] = k
+end
+table.sort(out)
+
+-- printing
+for _, v in ipairs(out) do
+  print(v)
+end

@@ -1,6 +1,10 @@
 local M = {}
 
-M.mid = math.tointeger(arg[1])
+M.mid = nil
+
+function M.setMid(mid)
+  M.mid = mid
+end
 
 -- operations
 local ops = {
@@ -14,7 +18,7 @@ local ops = {
 
 -- given numbers a, b, return all binary ops
 function M.calc(a, b)
-  results = {}
+  local results = {}
   for op, func in pairs(ops) do
     results[#results+1] = func(a, b)
   end
@@ -23,8 +27,8 @@ end
 
 function M.key(nums)
   local tmp = {}
-  for i = 0, #nums do
-    tmp[i] = nums[i]
+  for i = 1, #nums do
+    tmp[i] = math.tointeger(nums[i])
   end
   table.sort(tmp)
   return table.concat(tmp, ",")
@@ -39,30 +43,46 @@ function M.scoreState(nums)
   for _, v in ipairs(scores) do
     sum = sum + v
   end
+  return sum
 end
 
-function M.newState(nums)
+function M.newState(nums, parent)
+  parent = parent or { score = 0 }
   return {
     raw = nums,
     key = M.key(nums),
-    score = M.scoreState(nums)
+    score = M.scoreState(nums),
+    rscore = parent.score - M.scoreState(nums)
   }
 end
 
 function M.searchNextDepth(state)
-  subresults = {}
-  for i = 1, #state.raw - 1 do
-    for j = i + 1, #state.raw do
-      local a, b = state.raw[i], state.raw[j]
-      for _, r in M.calc(a, b) do
-        table.insert(subresults, r)
-      end
-      local results = {}
-      for _, r in subresults do
-        table.insert(results, M.newState(r))
+  local results = {}
+
+  local nums = state.raw
+  local n = #nums
+
+  for i = 1, n - 1 do
+    for j = i + 1, n do
+      local a, b = nums[i], nums[j]
+
+      for _, r in ipairs(M.calc(a, b)) do
+        if math.tointeger(r) then
+          local nextNums = {}
+
+          for k = 1, n do
+            if k ~= i and k ~= j then
+              nextNums[#nextNums + 1] = nums[k]
+            end
+          end
+
+          nextNums[#nextNums + 1] = r
+          results[#results + 1] = M.newState(nextNums, state)
+        end
       end
     end
   end
+
   return results
 end
 
