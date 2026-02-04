@@ -13,6 +13,7 @@ for i = 3, #arg do
 end
 
 states.setMid((TARGET_MAX + TARGET_MIN) / 2)
+states.setBounds(TARGET_MIN, TARGET_MAX)
 
 -- initialize min heap
 local heap = require("min")

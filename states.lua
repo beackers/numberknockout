@@ -1,26 +1,61 @@
 local M = {}
 
 M.mid = nil
+M.minBound = nil
+M.maxBound = nil
 
 function M.setMid(mid)
   M.mid = mid
 end
 
+function M.setBounds(minBound, maxBound)
+  M.minBound = minBound
+  M.maxBound = maxBound
+end
+
+local function isInteger(value)
+  return value ~= nil and math.tointeger(value) ~= nil
+end
+
+local function safePow(base, exp)
+  if not isInteger(exp) then
+    return nil
+  end
+  exp = math.tointeger(exp)
+  if exp < 0 then
+    return nil
+  end
+  if base == 0 and exp == 0 then
+    return nil
+  end
+  return base ^ exp
+end
+
 -- operations
 local ops = {
-  ["+"] = function(a,b) return a + b end,
-  ["a-b"] = function(a,b) return a - b end,
-  ["b-a"] = function(a,b) return b - a end,
-  ["*"] = function(a,b) return a * b end,
-  ["a/b"] = function(a,b) return (b ~= 0) and a / b or nil end,
-  ["b/a"] = function(a,b) return (a ~= 0) and b / a or nil end
+  ["+"] = function(a, b) return a + b end,
+  ["a-b"] = function(a, b) return a - b end,
+  ["b-a"] = function(a, b) return b - a end,
+  ["*"] = function(a, b) return a * b end,
+  ["a/b"] = function(a, b) return (b ~= 0 and a % b == 0) and a / b or nil end,
+  ["b/a"] = function(a, b) return (a ~= 0 and b % a == 0) and b / a or nil end,
+  ["a^b"] = function(a, b) return safePow(a, b) end,
+  ["b^a"] = function(a, b) return safePow(b, a) end
 }
 
 -- given numbers a, b, return all binary ops
 function M.calc(a, b)
   local results = {}
+  local seen = {}
   for op, func in pairs(ops) do
-    results[#results+1] = func(a, b)
+    local result = func(a, b)
+    if isInteger(result) then
+      result = math.tointeger(result)
+      if not seen[result] then
+        seen[result] = true
+        results[#results + 1] = result
+      end
+    end
   end
   return results
 end
@@ -68,18 +103,16 @@ function M.searchNextDepth(state)
       local a, b = nums[i], nums[j]
 
       for _, r in ipairs(M.calc(a, b)) do
-        if math.tointeger(r) then
-          local nextNums = {}
+        local nextNums = {}
 
-          for k = 1, n do
-            if k ~= i and k ~= j then
-              nextNums[#nextNums + 1] = nums[k]
-            end
+        for k = 1, n do
+          if k ~= i and k ~= j then
+            nextNums[#nextNums + 1] = nums[k]
           end
-
-          nextNums[#nextNums + 1] = r
-          results[#results + 1] = M.newState(nextNums, state)
         end
+
+        nextNums[#nextNums + 1] = r
+        results[#results + 1] = M.newState(nextNums, state)
       end
     end
   end
@@ -88,11 +121,19 @@ function M.searchNextDepth(state)
 end
 
 function M.canReach(state, min, max)
-  local sum = 0
-  for _, v in ipairs(state.raw) do
-    sum = sum + math.abs(v)
+  if min == nil or max == nil then
+    return true
   end
-  return sum >= min and sum <= max
+  if min > max then
+    return false
+  end
+  local sumAbs = 0
+  for _, v in ipairs(state.raw) do
+    sumAbs = sumAbs + math.abs(v)
+  end
+  local lower = -sumAbs
+  local upper = sumAbs
+  return not (max < lower or min > upper)
 end
 
 return M
