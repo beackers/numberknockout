@@ -127,13 +127,7 @@ function M.canReach(state, min, max)
   if min > max then
     return false
   end
-  local sumAbs = 0
-  for _, v in ipairs(state.raw) do
-    sumAbs = sumAbs + math.abs(v)
-  end
-  local lower = -sumAbs
-  local upper = sumAbs
-  return not (max < lower or min > upper)
+  return true
 end
 
 return M
