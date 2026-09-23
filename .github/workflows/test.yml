@@ -52,5 +52,5 @@ jobs:
 
       - name: Run with strange numbers
         run: lua knockout.lua -5 36 -5 0 .25
-        timoute-minutes: 2
+        timeout-minutes: 2
         continue-on-error: true
