@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Knockout - Blackout!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-solve {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-solve:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-solve:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            background: #e0e0e0;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .results-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #666;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+        }
+
+        .result-item {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+            font-style: italic;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+            display: none;
+        }
+
+        .success-message {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3c3;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-text {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #333;
+            border-left: 4px solid #667eea;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Number Knockout</h1>
+        <p class="subtitle">Find equations for numbers 1-36</p>
+
+        <div class="info-text">
+            <strong>How to play:</strong> Enter three numbers, and the solver will find all equations using those numbers that result in any integer from 1-36. Say "BLACKOUT!" when you find all 36! ⭐
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <label for="num1">First Number:</label>
+                <input type="number" id="num1" placeholder="e.g., 1" value="1">
+            </div>
+            <div class="input-group">
+                <label for="num2">Second Number:</label>
+                <input type="number" id="num2" placeholder="e.g., 2" value="2">
+            </div>
+            <div class="input-group">
+                <label for="num3">Third Number:</label>
+                <input type="number" id="num3" placeholder="e.g., 3" value="3">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-solve" onclick="solvePuzzle()">Solve</button>
+                <button class="btn-clear" onclick="clearAll()">Clear</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>Computing...
+        </div>
+
+        <div class="results-section">
+            <div class="results-info" id="resultsInfo" style="display: none;"></div>
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Number Knockout Solver
+        class MinHeap {
+            constructor() {
+                this.data = [];
+            }
+
+            priority(state) {
+                return state.score + state.depth;
+            }
+
+            siftUp(idx) {
+                while (idx > 0) {
+                    const parent = Math.floor((idx - 1) / 2);
+                    if (this.priority(this.data[parent]) <= this.priority(this.data[idx])) {
+                        break;
+                    }
+                    [this.data[parent], this.data[idx]] = [this.data[idx], this.data[parent]];
+                    idx = parent;
+                }
+            }
+
+            siftDown(idx) {
+                const size = this.data.length;
+                while (true) {
+                    let smallest = idx;
+                    const left = 2 * idx + 1;
+                    const right = 2 * idx + 2;
+
+                    if (left < size && this.priority(this.data[left]) < this.priority(this.data[smallest])) {
+                        smallest = left;
+                    }
+                    if (right < size && this.priority(this.data[right]) < this.priority(this.data[smallest])) {
+                        smallest = right;
+                    }
+                    if (smallest === idx) {
+                        break;
+                    }
+                    [this.data[idx], this.data[smallest]] = [this.data[smallest], this.data[idx]];
+                    idx = smallest;
+                }
+            }
+
+            push(state) {
+                this.data.push(state);
+                this.siftUp(this.data.length - 1);
+            }
+
+            pop() {
+                if (this.data.length === 0) return null;
+                const root = this.data[0];
+                const last = this.data.pop();
+                if (this.data.length > 0) {
+                    this.data[0] = last;
+                    this.siftDown(0);
+                }
+                return root;
+            }
+
+            isEmpty() {
+                return this.data.length === 0;
+            }
+        }
+
+        class KnockoutSolver {
+            constructor(targetMin, targetMax) {
+                this.targetMin = targetMin;
+                this.targetMax = targetMax;
+                this.mid = (targetMax + targetMin) / 2;
+            }
+
+            isInteger(value) {
+                return Number.isInteger(value);
+            }
+
+            safePow(base, exp) {
+                if (!Number.isInteger(exp)) return null;
+                if (exp < 0) return null;
+                if (base === 0 && exp === 0) return null;
+                return Math.pow(base, exp);
+            }
+
+            calc(a, b) {
+                const results = [];
+                const seen = new Set();
+
+                const ops = [
+                    a + b,
+                    a - b,
+                    b - a,
+                    a * b,
+                    b !== 0 && a % b === 0 ? a / b : null,
+                    a !== 0 && b % a === 0 ? b / a : null,
+                    this.safePow(a, b),
+                    this.safePow(b, a)
+                ];
+
+                for (const result of ops) {
+                    if (this.isInteger(result)) {
+                        const intResult = Math.floor(result);
+                        if (!seen.has(intResult)) {
+                            seen.add(intResult);
+                            results.push(intResult);
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            key(nums) {
+                return [...nums].sort((a, b) => a - b).join(',');
+            }
+
+            scoreState(nums) {
+                return nums.reduce((sum, num) => sum + Math.abs(this.mid - num), 0);
+            }
+
+            newState(nums, parent = null) {
+                parent = parent || { score: 0, depth: 0 };
+                const score = this.scoreState(nums);
+                return {
+                    raw: nums,
+                    key: this.key(nums),
+                    score: score,
+                    rscore: parent.score - score,
+                    depth: parent.depth + 1
+                };
+            }
+
+            searchNextDepth(state) {
+                const results = [];
+                const nums = state.raw;
+                const n = nums.length;
+
+                for (let i = 0; i < n - 1; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const a = nums[i];
+                        const b = nums[j];
+
+                        for (const r of this.calc(a, b)) {
+                            const nextNums = [];
+                            for (let k = 0; k < n; k++) {
+                                if (k !== i && k !== j) {
+                                    nextNums.push(nums[k]);
+                                }
+                            }
+                            nextNums.push(r);
+                            results.push(this.newState(nextNums, state));
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            solve(numbers) {
+                const heap = new MinHeap();
+                const initial = this.newState(numbers);
+                heap.push(initial);
+
+                const results = new Set();
+                const seen = new Set();
+
+                while (!heap.isEmpty()) {
+                    const state = heap.pop();
+
+                    if (state.raw.length === 1) {
+                        results.add(state.raw[0]);
+                        continue;
+                    }
+
+                    if (seen.has(state.key)) {
+                        continue;
+                    }
+                    seen.add(state.key);
+
+                    for (const newState of this.searchNextDepth(state)) {
+                        heap.push(newState);
+                    }
+                }
+
+                return Array.from(results).sort((a, b) => a - b);
+            }
+        }
+
+        function solvePuzzle() {
+            const num1Input = document.getElementById('num1').value.trim();
+            const num2Input = document.getElementById('num2').value.trim();
+            const num3Input = document.getElementById('num3').value.trim();
+
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.style.display = 'none';
+
+            if (!num1Input || !num2Input || !num3Input) {
+                errorMsg.textContent = '❌ Please enter all three numbers.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const num1 = parseInt(num1Input);
+            const num2 = parseInt(num2Input);
+            const num3 = parseInt(num3Input);
+
+            if (isNaN(num1) || isNaN(num2) || isNaN(num3)) {
+                errorMsg.textContent = '❌ Please enter valid integers.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultsInfo').style.display = 'none';
+            document.getElementById('resultsGrid').innerHTML = '';
+
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    const solver = new KnockoutSolver(1, 36);
+                    const results = solver.solve([num1, num2, num3]);
+
+                    displayResults(results, num1, num2, num3);
+                } catch (error) {
+                    errorMsg.textContent = `❌ Error: ${error.message}`;
+                    errorMsg.style.display = 'block';
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }, 10);
+        }
+
+        function displayResults(results, num1, num2, num3) {
+            const grid = document.getElementById('resultsGrid');
+            const info = document.getElementById('resultsInfo');
+            const successMsg = document.getElementById('successMessage');
+
+            successMsg.style.display = 'none';
+
+            if (results.length === 0) {
+                grid.innerHTML = '<div class="empty-state">No results found. Try different numbers!</div>';
+                info.innerHTML = `Using numbers: <strong>${num1}, ${num2}, ${num3}</strong>`;
+                info.style.display = 'block';
+                return;
+            }
+
+            const found = results.filter(r => r >= 1 && r <= 36).length;
+            const isBlackout = found === 36;
+
+            info.innerHTML = `Found <strong>${found} / 36</strong> numbers using: <strong>${num1}, ${num2}, ${num3}</strong>`;
+            info.style.display = 'block';
+
+            grid.innerHTML = '';
+            for (let i = 1; i <= 36; i++) {
+                const item = document.createElement('div');
+                if (results.includes(i)) {
+                    item.className = 'result-item';
+                    item.textContent = i;
+                } else {
+                    item.className = 'result-item';
+                    item.style.background = '#ddd';
+                    item.style.color = '#999';
+                    item.textContent = i;
+                }
+                grid.appendChild(item);
+            }
+
+            if (isBlackout) {
+                successMsg.textContent = '🎉 BLACKOUT! You found all 36 numbers!';
+                successMsg.style.display = 'block';
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('num1').value = '';
+            document.getElementById('num2').value = '';
+            document.getElementById('num3').value = '';
+            document.getElementById('resultsGrid').innerHTML = '';
+            document.getElementById('resultsInfo').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+            document.getElementById('num1').focus();
+        }
+
+        // Allow Enter key to solve
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'number') {
+                solvePuzzle();
+            }
+        });
+    </script>
+</body>
+</html>
