@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Knockout - State Space Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 8px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 0.85em;
+            color: #aaa;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="number"] {
+            padding: 8px 12px;
+            background: #0f3460;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 0.95em;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-visualize {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+
+        .btn-visualize:hover {
+            background: #5568d3;
+            box-shadow: 0 0 12px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-visualize:active {
+            transform: scale(0.98);
+        }
+
+        .btn-clear {
+            background: #0f3460;
+            color: #aaa;
+            padding: 8px 12px;
+        }
+
+        .btn-clear:hover {
+            background: #1a4d7a;
+            color: #fff;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .canvas-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: #0f3460;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #0f3460;
+        }
+
+        .legend {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 15px 20px;
+            background: #16213e;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            font-size: 0.9em;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #666;
+        }
+
+        .error-message {
+            background: #6b2424;
+            border-left: 4px solid #c33;
+            color: #ffaaaa;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .loading-message {
+            text-align: center;
+            color: #667eea;
+            padding: 20px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #444;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 8px;
+            border-left: 4px solid #00d4ff;
+            display: none;
+        }
+
+        .results-title {
+            color: #00d4ff;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
+            gap: 8px;
+        }
+
+        .result-item {
+            padding: 8px;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .result-found {
+            background: #667eea;
+            color: white;
+        }
+
+        .result-missing {
+            background: #333;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Number Knockout - State Space Visualizer</h1>
+        <p style="color: #999; margin-bottom: 20px;">Watch the solver explore the search space in real-time</p>
+    </div>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="controls-panel">
+        <div class="input-group">
+            <label for="num1">Number 1</label>
+            <input type="number" id="num1" value="1" min="-100" max="100">
+        </div>
+        <div class="input-group">
+            <label for="num2">Number 2</label>
+            <input type="number" id="num2" value="2" min="-100" max="100">
+        </div>
+        <div class="input-group">
+            <label for="num3">Number 3</label>
+            <input type="number" id="num3" value="3" min="-100" max="100">
+        </div>
+        <div class="button-group">
+            <button class="btn-visualize" onclick="startVisualization()">Visualize Search</button>
+            <button class="btn-clear" onclick="clearVisualization()">Clear</button>
+        </div>
+    </div>
+
+    <div class="loading-message" id="loadingMessage">
+        <div class="spinner"></div>Computing search space...
+    </div>
+
+    <div class="stats-panel" id="statsPanel" style="display: none;">
+        <div class="stat">
+            <div class="stat-value" id="stateCount">0</div>
+            <div class="stat-label">States Explored</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="leafCount">0</div>
+            <div class="stat-label">Leaf Nodes (Results)</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="maxDepth">0</div>
+            <div class="stat-label">Max Depth</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="renderTime">0ms</div>
+            <div class="stat-label">Render Time</div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="legend">
+        <div class="legend-title">Legend</div>
+        <div class="legend-items">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #667eea;"></div>
+                <span>Root node (initial state)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00d4ff;"></div>
+                <span>Intermediate nodes</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00ff88;"></div>
+                <span>Leaf nodes (results)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #444; border-color: #888;"></div>
+                <span>Duplicate states (pruned)</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+        <div class="results-title">Results: Found <span id="foundCount">0</span> / 36</div>
+        <div class="results-grid" id="resultsGrid"></div>
+    </div>
+
+    <script>
+        // Solver classes
+        class MinHeap {
+            constructor() {
+                this.data = [];
+            }
+
+            priority(state) {
+                return state.score + state.depth;
+            }
+
+            siftUp(idx) {
+                while (idx > 0) {
+                    const parent = Math.floor((idx - 1) / 2);
+                    if (this.priority(this.data[parent]) <= this.priority(this.data[idx])) {
+                        break;
+                    }
+                    [this.data[parent], this.data[idx]] = [this.data[idx], this.data[parent]];
+                    idx = parent;
+                }
+            }
+
+            siftDown(idx) {
+                const size = this.data.length;
+                while (true) {
+                    let smallest = idx;
+                    const left = 2 * idx + 1;
+                    const right = 2 * idx + 2;
+
+                    if (left < size && this.priority(this.data[left]) < this.priority(this.data[smallest])) {
+                        smallest = left;
+                    }
+                    if (right < size && this.priority(this.data[right]) < this.priority(this.data[smallest])) {
+                        smallest = right;
+                    }
+                    if (smallest === idx) {
+                        break;
+                    }
+                    [this.data[idx], this.data[smallest]] = [this.data[smallest], this.data[idx]];
+                    idx = smallest;
+                }
+            }
+
+            push(state) {
+                this.data.push(state);
+                this.siftUp(this.data.length - 1);
+            }
+
+            pop() {
+                if (this.data.length === 0) return null;
+                const root = this.data[0];
+                const last = this.data.pop();
+                if (this.data.length > 0) {
+                    this.data[0] = last;
+                    this.siftDown(0);
+                }
+                return root;
+            }
+
+            isEmpty() {
+                return this.data.length === 0;
+            }
+        }
+
+        class KnockoutSolverWithVisualization {
+            constructor(targetMin, targetMax) {
+                this.targetMin = targetMin;
+                this.targetMax = targetMax;
+                this.mid = (targetMax + targetMin) / 2;
+                this.nodes = [];
+                this.edges = [];
+                this.stateMap = new Map();
+            }
+
+            isInteger(value) {
+                return Number.isInteger(value);
+            }
+
+            safePow(base, exp) {
+                if (!Number.isInteger(exp)) return null;
+                if (exp < 0) return null;
+                if (base === 0 && exp === 0) return null;
+                return Math.pow(base, exp);
+            }
+
+            calc(a, b) {
+                const results = [];
+                const seen = new Set();
+
+                const ops = [
+                    a + b,
+                    a - b,
+                    b - a,
+                    a * b,
+                    b !== 0 && a % b === 0 ? a / b : null,
+                    a !== 0 && b % a === 0 ? b / a : null,
+                    this.safePow(a, b),
+                    this.safePow(b, a)
+                ];
+
+                for (const result of ops) {
+                    if (this.isInteger(result)) {
+                        const intResult = Math.floor(result);
+                        if (!seen.has(intResult)) {
+                            seen.add(intResult);
+                            results.push(intResult);
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            key(nums) {
+                return [...nums].sort((a, b) => a - b).join(',');
+            }
+
+            scoreState(nums) {
+                return nums.reduce((sum, num) => sum + Math.abs(this.mid - num), 0);
+            }
+
+            newState(nums, parent = null, parentId = null) {
+                parent = parent || { score: 0, depth: 0 };
+                const score = this.scoreState(nums);
+                const state = {
+                    raw: nums,
+                    key: this.key(nums),
+                    score: score,
+                    rscore: parent.score - score,
+                    depth: parent.depth + 1,
+                    parentId: parentId
+                };
+
+                // Add to visualization tracking
+                const nodeId = this.nodes.length;
+                state.id = nodeId;
+                this.nodes.push({
+                    id: nodeId,
+                    label: nums.join(','),
+                    depth: state.depth,
+                    isLeaf: false,
+                    isDuplicate: false,
+                    parentId: parentId
+                });
+
+                if (parentId !== null) {
+                    this.edges.push({
+                        from: parentId,
+                        to: nodeId
+                    });
+                }
+
+                return state;
+            }
+
+            searchNextDepth(state) {
+                const results = [];
+                const nums = state.raw;
+                const n = nums.length;
+
+                for (let i = 0; i < n - 1; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const a = nums[i];
+                        const b = nums[j];
+
+                        for (const r of this.calc(a, b)) {
+                            const nextNums = [];
+                            for (let k = 0; k < n; k++) {
+                                if (k !== i && k !== j) {
+                                    nextNums.push(nums[k]);
+                                }
+                            }
+                            nextNums.push(r);
+                            results.push(this.newState(nextNums, state, state.id));
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            solve(numbers) {
+                const heap = new MinHeap();
+                const initial = this.newState(numbers);
+                heap.push(initial);
+
+                const results = new Set();
+                const seen = new Set();
+
+                while (!heap.isEmpty()) {
+                    const state = heap.pop();
+
+                    if (state.raw.length === 1) {
+                        results.add(state.raw[0]);
+                        this.nodes[state.id].isLeaf = true;
+                        continue;
+                    }
+
+                    if (seen.has(state.key)) {
+                        this.nodes[state.id].isDuplicate = true;
+                        continue;
+                    }
+                    seen.add(state.key);
+
+                    for (const newState of this.searchNextDepth(state)) {
+                        heap.push(newState);
+                    }
+                }
+
+                return Array.from(results).sort((a, b) => a - b);
+            }
+        }
+
+        function startVisualization() {
+            const num1Input = document.getElementById('num1').value.trim();
+            const num2Input = document.getElementById('num2').value.trim();
+            const num3Input = document.getElementById('num3').value.trim();
+
+            const errorMsg = document.getElementById('errorMessage');
+            errorMsg.style.display = 'none';
+
+            if (!num1Input || !num2Input || !num3Input) {
+                errorMsg.textContent = '❌ Please enter all three numbers.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const num1 = parseInt(num1Input);
+            const num2 = parseInt(num2Input);
+            const num3 = parseInt(num3Input);
+
+            if (isNaN(num1) || isNaN(num2) || isNaN(num3)) {
+                errorMsg.textContent = '❌ Please enter valid integers.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('statsPanel').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+
+            setTimeout(() => {
+                try {
+                    const startTime = performance.now();
+                    const solver = new KnockoutSolverWithVisualization(1, 36);
+                    const results = solver.solve([num1, num2, num3]);
+                    const renderTime = performance.now() - startTime;
+
+                    visualizeGraph(solver, results, renderTime);
+                } catch (error) {
+                    errorMsg.textContent = `❌ Error: ${error.message}`;
+                    errorMsg.style.display = 'block';
+                } finally {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                }
+            }, 10);
+        }
+
+        function visualizeGraph(solver, results, renderTime) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = Math.max(600, solver.nodes.length * 2);
+
+            const nodes = solver.nodes;
+            const edges = solver.edges;
+
+            // Calculate positions using hierarchical layout
+            const positionMap = new Map();
+            const depthLayers = {};
+
+            nodes.forEach(node => {
+                if (!depthLayers[node.depth]) {
+                    depthLayers[node.depth] = [];
+                }
+                depthLayers[node.depth].push(node);
+            });
+
+            let maxDepth = Math.max(...Object.keys(depthLayers).map(Number));
+
+            Object.keys(depthLayers).forEach(depthStr => {
+                const depth = parseInt(depthStr);
+                const layerNodes = depthLayers[depth];
+                const y = (depth / (maxDepth + 1)) * canvas.height;
+
+                layerNodes.forEach((node, index) => {
+                    const x = ((index + 1) / (layerNodes.length + 1)) * canvas.width;
+                    positionMap.set(node.id, { x, y });
+                });
+            });
+
+            // Draw edges
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            edges.forEach(edge => {
+                const fromPos = positionMap.get(edge.from);
+                const toPos = positionMap.get(edge.to);
+                if (fromPos && toPos) {
+                    ctx.beginPath();
+                    ctx.moveTo(fromPos.x, fromPos.y);
+                    ctx.lineTo(toPos.x, toPos.y);
+                    ctx.stroke();
+                }
+            });
+
+            // Draw nodes
+            nodes.forEach(node => {
+                const pos = positionMap.get(node.id);
+                if (!pos) return;
+
+                const radius = 15;
+
+                // Determine color
+                let color;
+                if (node.isDuplicate) {
+                    color = '#333';
+                } else if (node.isLeaf) {
+                    color = '#00ff88';
+                } else if (node.depth === 0) {
+                    color = '#667eea';
+                } else {
+                    color = '#00d4ff';
+                }
+
+                // Draw node circle
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw border
+                ctx.strokeStyle = node.isDuplicate ? '#555' : '#888';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.label, pos.x, pos.y);
+            });
+
+            // Update stats
+            document.getElementById('stateCount').textContent = nodes.length;
+            document.getElementById('leafCount').textContent = nodes.filter(n => n.isLeaf).length;
+            document.getElementById('maxDepth').textContent = maxDepth;
+            document.getElementById('renderTime').textContent = Math.round(renderTime) + 'ms';
+            document.getElementById('statsPanel').style.display = 'grid';
+
+            // Display results
+            const foundCount = results.filter(r => r >= 1 && r <= 36).length;
+            document.getElementById('foundCount').textContent = foundCount;
+
+            const resultsGrid = document.getElementById('resultsGrid');
+            resultsGrid.innerHTML = '';
+            for (let i = 1; i <= 36; i++) {
+                const item = document.createElement('div');
+                item.className = results.includes(i) ? 'result-item result-found' : 'result-item result-missing';
+                item.textContent = i;
+                resultsGrid.appendChild(item);
+            }
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+
+        function clearVisualization() {
+            document.getElementById('num1').value = '';
+            document.getElementById('num2').value = '';
+            document.getElementById('num3').value = '';
+            document.getElementById('canvas').getContext('2d').clearRect(0, 0, document.getElementById('canvas').width, document.getElementById('canvas').height);
+            document.getElementById('statsPanel').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('num1').focus();
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('canvas');
+            if (canvas.width !== canvas.parentElement.clientWidth) {
+                // Could re-render here if needed
+            }
+        });
+
+        document.getElementById('num1').focus();
+    </script>
+</body>
+</html>
